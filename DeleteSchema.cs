@@ -32,33 +32,33 @@ namespace RevitDoc_Schemas
             FilteredElementCollector collector;
             string elementNames = "Элементы:";
 
-            try
-            {
-                collector = new FilteredElementCollector(doc).WhereElementIsNotElementType();
-                foreach (Element elem in collector)
-                {
-                    Entity entity = elem.GetEntity(targetSchema);
-                    if (entity.IsValid())
-                    {
-                        entityCount++;
-                        elementNames += $"{elem.Name}\n";
-                    }
-                }
-                collector = new FilteredElementCollector(doc).WhereElementIsElementType();
-                foreach (Element elem in collector)
-                {
-                    Entity entity = elem.GetEntity(targetSchema);
-                    if (entity.IsValid())
-                    {
-                        entityCount++;
-                        elementNames += $"\n{elem.Name}";
-                    }
-                }
-            }
-            catch (Autodesk.Revit.Exceptions.ArgumentException ex)
-            {
-                TaskDialog.Show("Ошибка", $"Не удалось получить доступ к данным схемы:\n{ex.Message}");
-            }
+            //try
+            //{
+            //    collector = new FilteredElementCollector(doc).WhereElementIsNotElementType();
+            //    foreach (Element elem in collector)
+            //    {
+            //        Entity entity = elem.GetEntity(targetSchema);
+            //        if (entity.IsValid())
+            //        {
+            //            entityCount++;
+            //            elementNames += $"{elem.Name}\n";
+            //        }
+            //    }
+            //    collector = new FilteredElementCollector(doc).WhereElementIsElementType();
+            //    foreach (Element elem in collector)
+            //    {
+            //        Entity entity = elem.GetEntity(targetSchema);
+            //        if (entity.IsValid())
+            //        {
+            //            entityCount++;
+            //            elementNames += $"\n{elem.Name}";
+            //        }
+            //    }
+            //}
+            //catch (Autodesk.Revit.Exceptions.ArgumentException ex)
+            //{
+            //    TaskDialog.Show("Ошибка", $"Не удалось получить доступ к данным схемы:\n{ex.Message}");
+            //}
 
 
             //Проверяем, можно ли удалить
@@ -70,8 +70,15 @@ namespace RevitDoc_Schemas
             else
             {
                 TaskDialog.Show("Внимание", $"Нет подходящих элементов схемы. Схема будет удалена");
-                Delete(targetSchema);
-                return Result.Failed;
+                using (Transaction trans = new Transaction(doc))
+                {
+                    trans.Start("Delete Schema");
+
+                    Delete(targetSchema);
+
+                    trans.Commit();
+                }
+                return Result.Succeeded;
             }
         }
 
@@ -79,7 +86,7 @@ namespace RevitDoc_Schemas
         {
             try
             {
-                Schema.EraseSchemaAndAllEntities(targetSchema, true);
+                Schema.EraseSchemaAndAllEntities(targetSchema, false);
 
                 TaskDialog.Show("Удаление схемы", 
                     $"Схема {targetSchema.SchemaName} (GUID: {_schemaGuid}) успешно удалена.");
